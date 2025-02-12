@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imgui Color Picker</title>
+    <style>
+        * {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        @media (prefers-color-scheme: dark) {
+            * {
+                background: #1c1c1c;
+                color: white;
+            }
+        }
+        .copy:hover {
+            text-decoration: underline;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h3>ImGui Color picker</h3>
+    <p>1. Pick a color:</p>
+    <canvas id="colorCanvas"></canvas>
+    <p>2. Copy color:
+        <br/><br/>
+        ImGui: <span id="col_imgui"></span> <span class="copy" id="copy_imgui"></span>
+        <br/><br/>
+        RGBA: <span id="col_rgb"></span> <span class="copy" id="copy_rgb"></span>
+    </p>
+
+    <script type="text/javascript">
+        var canvas = document.getElementById('colorCanvas');
+
+        var imgui_txt = document.getElementById('col_imgui');
+        var rgb_txt = document.getElementById('col_rgb');
+
+        var copy_imgui = document.getElementById('copy_imgui');
+        var copy_rgb = document.getElementById('copy_rgb');
+
+        function round_3(n) {
+            newn = Math.round((n + Number.EPSILON) * 1000) / 1000;
+            addf = Number.isInteger(newn)?".f":"f"
+            return newn+addf;
+        }
+
+        function draw_circle(ctx,x,y,r,col) {
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, 2 * Math.PI, false);
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = col;
+            ctx.stroke();
+        }
+
+        function resizeCanv() {
+            canvas.width = window.innerWidth / 2;
+            canvas.height = window.innerHeight / 2;
+        }
+
+        window.addEventListener('resize', function(event) {
+            initColorPicker()
+        }, true);
+        
+        function initColorPicker() {
+            resizeCanv()
+            var canvasContext = canvas.getContext('2d');
+
+            let gradient = canvas.getContext('2d').createLinearGradient(0, 0, canvas.width, 0)
+            gradient.addColorStop(0, '#ff0000')
+            gradient.addColorStop(1 / 6, '#ffff00')
+            gradient.addColorStop((1 / 6) * 2, '#00ff00')
+            gradient.addColorStop((1 / 6) * 3, '#00ffff')
+            gradient.addColorStop((1 / 6) * 4, '#0000ff')
+            gradient.addColorStop((1 / 6) * 5, '#ff00ff')
+            gradient.addColorStop(1, '#ff0000')
+            canvas.getContext('2d').fillStyle = gradient
+            canvas.getContext('2d').fillRect(0, 0, canvas.width, canvas.height)
+
+            gradient = canvas.getContext('2d').createLinearGradient(0, 0, 0, canvas.height)
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)')
+            gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0)')
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)')
+            canvas.getContext('2d').fillStyle = gradient
+            canvas.getContext('2d').fillRect(0, 0, canvas.width, canvas.height)
+
+            gradient = canvas.getContext('2d').createLinearGradient(0, 0, 0, canvas.height)
+            gradient.addColorStop(0, 'rgba(0, 0, 0, 0)')
+            gradient.addColorStop(0.5, 'rgba(0, 0, 0, 0)')
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 1)')
+            canvas.getContext('2d').fillStyle = gradient
+            canvas.getContext('2d').fillRect(0, 0, canvas.width, canvas.height)
+
+
+            canvas.onclick = function(e) {
+                initColorPicker();
+
+                var imgData = canvasContext.getImageData((e.offsetX / canvas.clientWidth) * canvas.width, (e.offsetY / canvas.clientHeight) * canvas.height, 1, 1)
+
+                var rgba = imgData.data;
+                var color = "rgba(" + rgba[0] + ", " + rgba[1] + ", " + rgba[2] + ", " + rgba[3] + ")";
+
+                var inv_color = "rgba(" + (255-rgba[0]) + ", " + (255-rgba[1]) + ", " + (255-rgba[2]) + ", " + (255) + ")";
+
+                draw_circle(canvasContext,e.offsetX,e.offsetY,5,inv_color)
+
+                var color_imgui = "{" + round_3(rgba[0]/255) + ", " + round_3(rgba[1]/255) + ", " + round_3(rgba[2]/255) + ", " + round_3(rgba[3]/255) + "}";
+                imgui_txt.innerHTML = color_imgui;
+                imgui_txt.style.color = color;
+
+                imgui_txt.style.backgroundColor = inv_color;
+                copy_imgui.innerHTML = "[Copy]";
+                copy_imgui.onclick = function(){
+                    navigator.clipboard.writeText(color_imgui);
+                    alert("Copied: "+color_imgui);
+                };
+
+                rgb_txt.innerHTML = color;
+                rgb_txt.style.color = color;
+
+                rgb_txt.style.backgroundColor = inv_color;
+                copy_rgb.innerHTML = "[Copy]";
+                copy_rgb.onclick = function(){
+                    navigator.clipboard.writeText(color);
+                    alert("Copied: "+color);
+                };
+            }
+
+            }
+
+            initColorPicker()
+    </script>
+</body>
+</html>
