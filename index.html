@@ -18,13 +18,36 @@
             text-decoration: underline;
             cursor: pointer;
         }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
     </style>
 </head>
 <body>
     <h3>ImGui Color picker</h3>
     <p>1. Pick a color:</p>
     <canvas id="colorCanvas"></canvas>
-    <p>2. Copy color:
+    <p>2. Or convert existing:</p>
+
+    <label for="hexcol">HEX:</label>
+    <input type="text" id="hexcol" name="hexcol" placeholder="#FFFFFF"/>
+    <br/><br/>
+    <label for="rgbcol.r">R:</label>
+    <input type="number" id="rgbcol.r" name="rgbcol.r" placeholder="1"/>
+    <br/><br/>
+    <label for="rgbcol.g">G:</label>
+    <input type="number" id="rgbcol.g" name="rgbcol.g" placeholder="2"/>
+    <br/><br/>
+    <label for="rgbcol.b">B:</label>
+    <input type="number" id="rgbcol.b" name="rgbcol.b" placeholder="3"/>
+
+    <p>3. Copy color:
         <br/><br/>
         ImGui: <span id="col_imgui"></span> <span class="copy" id="copy_imgui"></span>
         <br/><br/>
@@ -40,10 +63,20 @@
         var copy_imgui = document.getElementById('copy_imgui');
         var copy_rgb = document.getElementById('copy_rgb');
 
+        var hexcol = document.getElementById('hexcol');
+
+        var rgbcol_r = document.getElementById('rgbcol.r');
+        var rgbcol_g = document.getElementById('rgbcol.g');
+        var rgbcol_b = document.getElementById('rgbcol.b');
+
         function round_3(n) {
             newn = Math.round((n + Number.EPSILON) * 1000) / 1000;
             addf = Number.isInteger(newn)?".f":"f"
             return newn+addf;
+        }
+
+        function clamp(number, min, max) {
+            return Math.max(min, Math.min(number, max));
         }
 
         function draw_circle(ctx,x,y,r,col) {
@@ -59,9 +92,86 @@
             canvas.height = window.innerHeight / 2;
         }
 
+        function hexToRgb(hex) {
+            var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
         window.addEventListener('resize', function(event) {
             initColorPicker()
         }, true);
+
+        const hexInputHandle = function(e) {
+
+            var res = hexToRgb(e.target.value);
+            if (res == null) {
+                return;
+            }
+
+            var rgba = {0:res.r, 1:res.g, 2:res.b, 3:255};
+
+            var color = "rgba(" + rgba[0] + ", " + rgba[1] + ", " + rgba[2] + ", " + rgba[3] + ")";
+            var inv_color = "rgba(" + (255-rgba[0]) + ", " + (255-rgba[1]) + ", " + (255-rgba[2]) + ", " + (255) + ")";
+
+            var color_imgui = "{" + round_3(rgba[0]/255) + ", " + round_3(rgba[1]/255) + ", " + round_3(rgba[2]/255) + ", " + round_3(rgba[3]/255) + "}";
+            imgui_txt.innerHTML = color_imgui;
+            imgui_txt.style.color = color;
+
+            imgui_txt.style.backgroundColor = inv_color;
+            copy_imgui.innerHTML = "[Copy]";
+            copy_imgui.onclick = function(){
+                navigator.clipboard.writeText(color_imgui);
+                alert("Copied: "+color_imgui);
+            };
+
+            rgb_txt.innerHTML = color;
+            rgb_txt.style.color = color;
+
+            rgb_txt.style.backgroundColor = inv_color;
+            copy_rgb.innerHTML = "[Copy]";
+            copy_rgb.onclick = function(){
+                navigator.clipboard.writeText(color);
+                alert("Copied: "+color);
+            };
+        }
+
+        hexcol.addEventListener('input', hexInputHandle);
+
+        function update_rgb() {
+            var rgba = {0:clamp(rgbcol_r.value || 0,0,255), 1:clamp(rgbcol_g.value || 0,0,255), 2:clamp(rgbcol_b.value || 0,0,255), 3:255};
+
+            var color = "rgba(" + rgba[0] + ", " + rgba[1] + ", " + rgba[2] + ", " + rgba[3] + ")";
+            var inv_color = "rgba(" + (255-rgba[0]) + ", " + (255-rgba[1]) + ", " + (255-rgba[2]) + ", " + (255) + ")";
+
+            var color_imgui = "{" + round_3(rgba[0]/255) + ", " + round_3(rgba[1]/255) + ", " + round_3(rgba[2]/255) + ", " + round_3(rgba[3]/255) + "}";
+            imgui_txt.innerHTML = color_imgui;
+            imgui_txt.style.color = color;
+
+            imgui_txt.style.backgroundColor = inv_color;
+            copy_imgui.innerHTML = "[Copy]";
+            copy_imgui.onclick = function(){
+                navigator.clipboard.writeText(color_imgui);
+                alert("Copied: "+color_imgui);
+            };
+
+            rgb_txt.innerHTML = color;
+            rgb_txt.style.color = color;
+
+            rgb_txt.style.backgroundColor = inv_color;
+            copy_rgb.innerHTML = "[Copy]";
+            copy_rgb.onclick = function(){
+                navigator.clipboard.writeText(color);
+                alert("Copied: "+color);
+            };
+        }
+
+        rgbcol_r.addEventListener('input',update_rgb);
+        rgbcol_g.addEventListener('input',update_rgb);
+        rgbcol_b.addEventListener('input',update_rgb);
         
         function initColorPicker() {
             resizeCanv()
